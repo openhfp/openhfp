@@ -1,0 +1,20 @@
+{
+  "name": "openhfp-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OpenHFP monorepo — JS/TS workspaces for the HTML Form Package format.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openhfp/openhfp.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc --build"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

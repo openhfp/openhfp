@@ -1,0 +1,15 @@
+[package]
+name = "hfp-core"
+description = "Reference engine for the HFP (HTML Form Package) format: parse, canonicalize, extract, validate, verify."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+# `cdylib` is kept so the crate can also be compiled to a WASM module (decided in Spike A).
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]

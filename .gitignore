@@ -1,0 +1,28 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock.orig
+
+# Node / JS
+node_modules/
+dist/
+*.tsbuildinfo
+.npm/
+
+# Tauri / Filler build output
+filler/target/
+filler/dist/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local env / secrets — never commit private keys or .p12
+*.p12
+*.pfx
+*.key
+.env
+.env.*

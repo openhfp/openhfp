@@ -1,0 +1,21 @@
+{
+  "name": "@openhfp/types",
+  "version": "0.0.0",
+  "description": "TypeScript contract for the window.hfp runtime API (source of truth).",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openhfp/openhfp.git",
+    "directory": "packages/types"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
