@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="hfp-version" content="1.0">
+  <meta name="hfp-id" content="b3c1e2a4-0000-4a1b-8c2d-000000000001">
+  <meta name="hfp-author" content="CN=ACME Service s.r.o.">
+  <title>Service Protocol</title>
+  <script id="hfp-schema" type="application/json">
+  {
+    "type": "object",
+    "required": ["technician", "device"],
+    "properties": {
+      "technician": { "type": "string" },
+      "device": { "type": "string" },
+      "faults": { "type": "array", "items": { "type": "string" } }
+    }
+  }
+  </script>
+  <script id="hfp-data" type="application/json">
+  { "technician": "Jan Novak", "device": "Pump A-12", "faults": ["seal leak"] }
+  </script>
+  <script id="hfp-data-signature" type="application/pkcs7-signature">MIIFAKE_DATA_SIGNATURE_BASE64==</script>
+</head>
+<body>
+  <h1>Service Protocol</h1>
+  <form>
+    <label>Technician <input name="technician"></label>
+    <label>Device <input name="device"></label>
+  </form>
+</body>
+</html>

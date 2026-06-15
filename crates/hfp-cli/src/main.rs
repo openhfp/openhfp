@@ -60,6 +60,49 @@ fn run_verify(path: Option<String>) -> ExitCode {
     }
 }
 
+/// Print the canonical bytes (or, with `--sha`, their SHA-256) for a `.hfp` file.
+///
+/// The same code path runs natively and as a `wasm32-wasip1` module — this command is
+/// the harness Spike A uses to prove the two builds produce byte-identical output.
+fn run_canonicalize(args: &[String]) -> ExitCode {
+    let sha_only = args.iter().any(|a| a == "--sha");
+    let Some(path) = args.iter().find(|a| !a.starts_with("--")) else {
+        eprintln!("canonicalize: missing file argument");
+        return ExitCode::from(2);
+    };
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            eprintln!("cannot read {path}: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    if sha_only {
+        match hfp_core::canonical_sha256_hex(&bytes) {
+            Ok(hex) => {
+                println!("{hex}");
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("canonicalize: {e}");
+                ExitCode::from(2)
+            }
+        }
+    } else {
+        match hfp_core::canonicalize(&bytes) {
+            Ok(canon) => {
+                use std::io::Write;
+                std::io::stdout().write_all(&canon).ok();
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("canonicalize: {e}");
+                ExitCode::from(2)
+            }
+        }
+    }
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     match args.next().as_deref() {
@@ -72,6 +115,7 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Some("verify") => run_verify(args.next()),
+        Some("canonicalize") => run_canonicalize(&args.collect::<Vec<_>>()),
         Some(cmd) if COMMANDS.iter().any(|(name, _)| *name == cmd) => {
             eprintln!("`{cmd}` is not implemented yet (pre-alpha scaffold).");
             ExitCode::from(2)
