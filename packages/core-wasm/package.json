@@ -1,0 +1,21 @@
+{
+  "name": "@openhfp/core-wasm",
+  "version": "0.0.0",
+  "description": "WASM build of the HFP read side (canonicalize, extract, validate) from hfp-core — one engine, callable from JS.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/hfp_wasm.js",
+  "types": "dist/hfp_wasm.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "bash build.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openhfp/openhfp.git",
+    "directory": "packages/core-wasm"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

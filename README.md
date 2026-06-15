@@ -40,8 +40,9 @@ The author signs the canonical document; the filler signs the canonical data plu
 |-----------|-----------|--------|
 | `hfp-core` | Rust crate — parse, canonicalize, extract, validate, verify, sign (+ WASM target) | canonicalize, verify, extract, validate, sign done; `audit` pending |
 | `hfp-cli` | Rust binary — `validate` / `extract` / `verify` / `canonicalize` / `sign` / `audit` | `canonicalize`, `extract`, `validate`, `verify`, `sign`, `data-payload` work |
+| `@openhfp/core-wasm` | `hfp-core` read side compiled to WASM (canonicalize/extract/validate) | implemented; WASM == native proven in CI |
 | `@openhfp/types` | TypeScript contract for the `window.hfp` runtime API | contract complete |
-| `@openhfp/devtools` | Browser dev shim (`createDevShimFromDocument()`, `bindForm()`) | implemented (JS validation as a UX aid; signing mocked) |
+| `@openhfp/devtools` | Browser dev shim (`createDevShimFromDocument()`, `bindForm()`) | implemented; pluggable validator (JS UX aid, or WASM core); signing mocked |
 | HFP Filler | Desktop app (Tauri + Rust) — open, verify, fill, sign, save, print | planned |
 
 ## Repository layout
@@ -70,9 +71,10 @@ filler/        desktop Filler app (added later)
 - **Phase 1.2 — CLI** ✅ (core commands) — `canonicalize`/`extract`/`validate`/`verify`/`sign`/`data-payload`
   wired; `audit` JS scan and richer `info` still to come
 - **Phase 1.3 — dev-tools + types + templates** ← current — `@openhfp/types` contract, the
-  `@openhfp/devtools` browser dev shim (`createDevShimFromDocument`, `bindForm`) and the
-  `plain-html` starter template; the dev shim's JS validation will later defer to the
-  `hfp-core` WASM build (the remaining 1.3 integration)
+  `@openhfp/devtools` browser dev shim (`createDevShimFromDocument`, `bindForm`), the
+  `plain-html` starter template, and `@openhfp/core-wasm` (the `hfp-core` read side compiled
+  to WASM; `canonicalizeSha256`/`validate` proven byte-identical to native, pluggable into
+  the dev shim). Remaining: `verify` in the browser + framework templates.
 - then **1.4 Filler PoC**, **1.5 pilot**
 
 ## Contributing

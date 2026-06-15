@@ -17,14 +17,20 @@ pub(crate) fn extract(raw: &[u8]) -> Result<String> {
     Ok(text)
 }
 
-/// Validate `#hfp-data` against `#hfp-schema`.
+/// Validate `#hfp-data` against `#hfp-schema` (reads both blocks from the document).
 pub(crate) fn validate(raw: &[u8]) -> Result<ValidationReport> {
     let data_text = crate::canon::inner_text_by_id(raw, "hfp-data")?;
     let schema_text = crate::canon::inner_text_by_id(raw, "hfp-schema")?;
+    validate_values(&schema_text, &data_text)
+}
+
+/// Validate already-extracted `data` JSON against `schema` JSON. Used by the WASM dev shim,
+/// which holds the parsed blocks in hand.
+pub(crate) fn validate_values(schema_json: &str, data_json: &str) -> Result<ValidationReport> {
     let data: Value =
-        serde_json::from_str(&data_text).map_err(|_| Error::InvalidJson("hfp-data"))?;
+        serde_json::from_str(data_json).map_err(|_| Error::InvalidJson("hfp-data"))?;
     let schema: Value =
-        serde_json::from_str(&schema_text).map_err(|_| Error::InvalidJson("hfp-schema"))?;
+        serde_json::from_str(schema_json).map_err(|_| Error::InvalidJson("hfp-schema"))?;
 
     let mut errors = Vec::new();
     check(&schema, &data, "", &mut errors);

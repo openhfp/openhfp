@@ -56,6 +56,7 @@ const EMPTIED_BLOCKS: &[&str] = &["hfp-data", "hfp-data-signature"];
 /// The block ids emptied for the canonical *document* the author signs (Spike B): the
 /// data, the data signature, AND the author signature itself — otherwise the author
 /// signature would have to cover its own bytes (a cycle). See spike-b-findings.md.
+#[cfg(feature = "crypto")]
 const AUTHOR_EMPTIED_BLOCKS: &[&str] = &["hfp-data", "hfp-data-signature", "hfp-author-signature"];
 
 /// Produce the canonical bytes for `raw`. See the module docs for the exact rules.
@@ -65,6 +66,7 @@ pub fn canonicalize(raw: &[u8]) -> Result<Vec<u8>> {
 
 /// Canonical bytes the author signature is computed over: like [`canonicalize`] but also
 /// empties `#hfp-author-signature` so the signature does not cover itself.
+#[cfg(feature = "crypto")]
 pub fn canonical_author_bytes(raw: &[u8]) -> Result<Vec<u8>> {
     canonicalize_emptying(raw, AUTHOR_EMPTIED_BLOCKS)
 }
@@ -92,6 +94,7 @@ fn canonicalize_emptying(raw: &[u8], empty_ids: &[&str]) -> Result<Vec<u8>> {
 /// Serialize `raw` deterministically, replacing the inner content of the listed block
 /// ids with the given strings (verbatim). Used by signing to slot signatures into
 /// `#hfp-author-signature` / `#hfp-data-signature` while normalizing the rest.
+#[cfg(feature = "crypto")]
 pub(crate) fn serialize_with_inserts(raw: &[u8], inserts: &[(&str, &str)]) -> Result<Vec<u8>> {
     let dom = parse(raw)?;
     let mut out = String::new();
@@ -127,6 +130,7 @@ pub(crate) fn inner_text_by_id(raw: &[u8], id: &'static str) -> Result<String> {
 }
 
 /// The `content` attribute of `<meta name="...">`, if present.
+#[cfg(feature = "crypto")]
 pub(crate) fn meta_content(raw: &[u8], name: &str) -> Result<Option<String>> {
     let dom = parse(raw)?;
     Ok(find_meta(&dom.document, name))
@@ -141,6 +145,7 @@ fn collect_text(node: &Handle, out: &mut String) {
     }
 }
 
+#[cfg(feature = "crypto")]
 fn find_meta(node: &Handle, name: &str) -> Option<String> {
     if let NodeData::Element {
         name: tag, attrs, ..
