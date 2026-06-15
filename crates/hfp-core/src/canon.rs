@@ -84,7 +84,19 @@ fn canonicalize_emptying(raw: &[u8], empty_ids: &[&str]) -> Result<Vec<u8>> {
 
     let mut out = String::new();
     for child in dom.document.children.borrow().iter() {
-        serialize_node(child, &mut out);
+        serialize_node(child, &mut out, &[]);
+    }
+    Ok(out.into_bytes())
+}
+
+/// Serialize `raw` deterministically, replacing the inner content of the listed block
+/// ids with the given strings (verbatim). Used by signing to slot signatures into
+/// `#hfp-author-signature` / `#hfp-data-signature` while normalizing the rest.
+pub(crate) fn serialize_with_inserts(raw: &[u8], inserts: &[(&str, &str)]) -> Result<Vec<u8>> {
+    let dom = parse(raw)?;
+    let mut out = String::new();
+    for child in dom.document.children.borrow().iter() {
+        serialize_node(child, &mut out, inserts);
     }
     Ok(out.into_bytes())
 }
@@ -196,7 +208,7 @@ fn collect_by_id(node: &Handle, id: &str, out: &mut Vec<Handle>) {
     }
 }
 
-fn serialize_node(node: &Handle, out: &mut String) {
+fn serialize_node(node: &Handle, out: &mut String, inserts: &[(&str, &str)]) {
     match &node.data {
         NodeData::Doctype { name, .. } => {
             out.push_str("<!DOCTYPE ");
@@ -213,17 +225,18 @@ fn serialize_node(node: &Handle, out: &mut String) {
             push_escaped_text(&contents.borrow(), out);
         }
         NodeData::Element { name, .. } => {
-            serialize_element(node, &name.local, out);
+            serialize_element(node, &name.local, out, inserts);
         }
         _ => {}
     }
 }
 
-fn serialize_element(node: &Handle, tag: &str, out: &mut String) {
+fn serialize_element(node: &Handle, tag: &str, out: &mut String, inserts: &[(&str, &str)]) {
     out.push('<');
     out.push_str(tag);
 
     // Attributes sorted by (namespace, local name) for a stable order.
+    let mut element_id = None;
     if let NodeData::Element { attrs, .. } = &node.data {
         let mut pairs: Vec<(String, String, String)> = attrs
             .borrow()
@@ -236,6 +249,9 @@ fn serialize_element(node: &Handle, tag: &str, out: &mut String) {
             .collect();
         pairs.sort_by(|a, b| (&a.0, &a.1).cmp(&(&b.0, &b.1)));
         for (_, name, value) in &pairs {
+            if name == "id" {
+                element_id = Some(value.clone());
+            }
             out.push(' ');
             out.push_str(name);
             out.push_str("=\"");
@@ -247,6 +263,17 @@ fn serialize_element(node: &Handle, tag: &str, out: &mut String) {
 
     if VOID_ELEMENTS.contains(&tag) {
         return; // No children, no closing tag.
+    }
+
+    // Signing insertion: replace this block's inner content with the supplied string.
+    if let Some(id) = &element_id {
+        if let Some((_, content)) = inserts.iter().find(|(k, _)| k == id) {
+            out.push_str(content);
+            out.push_str("</");
+            out.push_str(tag);
+            out.push('>');
+            return;
+        }
     }
 
     let raw_text = RAW_TEXT.contains(&tag);
@@ -263,7 +290,7 @@ fn serialize_element(node: &Handle, tag: &str, out: &mut String) {
                 push_escaped_text(&s, out);
             }
         } else {
-            serialize_node(child, out);
+            serialize_node(child, out, inserts);
         }
     }
 

@@ -15,8 +15,10 @@ use std::fmt;
 
 mod canon;
 mod schema;
+mod sign;
 mod verify;
 pub use canon::canonical_sha256_hex;
+pub use sign::SigningIdentity;
 
 /// Errors returned by the core engine.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,6 +33,8 @@ pub enum Error {
     MissingMeta(&'static str),
     /// A block that must contain JSON (for example `#hfp-data`) did not parse.
     InvalidJson(&'static str),
+    /// A cryptographic operation failed (key/cert parsing, CMS build).
+    Crypto(&'static str),
     /// The operation is part of the API surface but is not implemented yet.
     NotImplemented(&'static str),
 }
@@ -43,6 +47,7 @@ impl fmt::Display for Error {
             Error::DuplicateBlock(b) => write!(f, "duplicate block id: {b}"),
             Error::MissingMeta(m) => write!(f, "required meta is missing: {m}"),
             Error::InvalidJson(b) => write!(f, "block is not valid JSON: {b}"),
+            Error::Crypto(what) => write!(f, "cryptographic operation failed: {what}"),
             Error::NotImplemented(what) => write!(f, "not implemented yet: {what}"),
         }
     }
@@ -153,6 +158,13 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 /// Verify the author and data signatures against the given trust policy.
 pub fn verify(raw: &[u8], trust: &TrustConfig) -> Result<VerifyReport> {
     verify::verify(raw, trust)
+}
+
+/// Produce a fully signed `.hfp`: the author signs the canonical document, then the filler
+/// signs the bound data payload. Signing lives here as the reference implementation; in
+/// production the Filler supplies key access (OS keystore).
+pub fn sign(raw: &[u8], author: &SigningIdentity, filler: &SigningIdentity) -> Result<Vec<u8>> {
+    sign::sign(raw, author, filler)
 }
 
 #[cfg(test)]

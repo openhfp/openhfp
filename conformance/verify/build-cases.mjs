@@ -134,5 +134,21 @@ writeCase("revoked-no-check", revoked, {
   expect: { author_signature_valid: true, data_signature_valid: true, is_trusted: true },
 });
 
+// 6) self-signed — built by `hfp sign` (our own signer), proving sign -> verify in our code.
+const unsigned = TEMPLATE.replace("__DATA__", DATA)
+  .replace("__AUTHOR_SIG__", "")
+  .replace("__DATA_SIG__", "");
+const unsignedPath = join(TMP, "unsigned.hfp");
+writeFileSync(unsignedPath, unsigned);
+const selfSigned = sh(HFP, [
+  "sign", unsignedPath,
+  "--author-cert", join(PKI, "author.crt"), "--author-key", join(PKI, "author.key"),
+  "--filler-cert", join(PKI, "filler.crt"), "--filler-key", join(PKI, "filler.key"),
+]).toString();
+writeCase("self-signed", selfSigned, {
+  verify: baseVerify,
+  expect: { author_signature_valid: true, data_signature_valid: true, is_trusted: true },
+});
+
 rmSync(TMP, { recursive: true, force: true });
-console.log("built cases: valid, untrusted-ca, tampered, revoked, revoked-no-check");
+console.log("built cases: valid, untrusted-ca, tampered, revoked, revoked-no-check, self-signed");
