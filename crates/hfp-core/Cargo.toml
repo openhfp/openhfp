@@ -15,4 +15,17 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 html5ever = "0.39.0"
 markup5ever_rcdom = "0.39.0"
-sha2 = "0.11.0"
+
+# CMS/PKCS#7 verification stack (Spike B) — pinned to one coherent RustCrypto generation.
+# cms 0.2 is built on der 0.7 / const-oid 0.9 / spki 0.7 / x509-cert 0.2, and rsa 0.9
+# integrates with the digest 0.10 generation, so sha2 is held at 0.10 (not 0.11).
+cms = "0.2.3"
+x509-cert = "0.2.5"
+der = { version = "0.7", features = ["oid"] }
+const-oid = { version = "0.9", features = ["db"] }
+spki = "0.7"
+rsa = { version = "0.9", features = ["sha2"] }
+sha2 = "0.10"
+sha1 = "0.10"
+signature = "2"
+base64 = "0.22"

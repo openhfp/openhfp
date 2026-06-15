@@ -3,6 +3,12 @@
 **/*.rs.bk
 Cargo.lock.orig
 
+# Spike B test PKI + signed fixtures — generated, never committed (contains private keys).
+# Reproduce with conformance/verify/gen-pki.sh + build-cases.mjs.
+conformance/verify/pki/
+conformance/verify/cases/
+conformance/verify/.tmp/
+
 # Node / JS
 node_modules/
 dist/

@@ -38,6 +38,22 @@ the expected bytes from the reference engine.
 - **fail (must hard-fail):** `dup-data` (duplicate `id="hfp-data"`), `missing-data`,
   `invalid-utf8`.
 
+## Signature corpus (`verify/`, Spike B)
+
+Signature cases need a PKI, so they are **generated, not committed** (never commit private
+keys). The scripts under `verify/` build a test CA + certs + CRL with OpenSSL, sign real
+`.hfp` documents, and check each `VerifyReport`:
+
+```sh
+cargo build -p hfp-cli --release
+bash verify/gen-pki.sh         # test CA, author/filler/revoked certs, CRL
+node verify/build-cases.mjs    # sign valid / untrusted-ca / tampered / revoked cases
+node verify/run-verify.mjs     # assert author/data signature validity + is_trusted
+```
+
+See [../spec/spike-b-findings.md](../spec/spike-b-findings.md). OCSP and full path
+validation (validity dates, key usage, intermediates) are follow-ups.
+
 ## Coverage targets
 
 - Benign mutations that MUST yield the same hash: formatter output, minification,
