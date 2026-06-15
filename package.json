@@ -12,7 +12,9 @@
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --build",
+    "build": "tsc --build",
+    "test": "tsc --build && node --test packages/devtools/test/*.test.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.2"
