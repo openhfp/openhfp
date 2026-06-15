@@ -40,8 +40,8 @@ The author signs the canonical document; the filler signs the canonical data plu
 |-----------|-----------|--------|
 | `hfp-core` | Rust crate — parse, canonicalize, extract, validate, verify, sign (+ WASM target) | canonicalize, verify, extract, validate, sign done; `audit` pending |
 | `hfp-cli` | Rust binary — `validate` / `extract` / `verify` / `canonicalize` / `sign` / `audit` | `canonicalize`, `extract`, `validate`, `verify`, `sign`, `data-payload` work |
-| `@openhfp/types` | TypeScript contract for the `window.hfp` runtime API | scaffold |
-| `@openhfp/devtools` | Browser dev shim (`createDevShimFromDocument()`) | scaffold |
+| `@openhfp/types` | TypeScript contract for the `window.hfp` runtime API | contract complete |
+| `@openhfp/devtools` | Browser dev shim (`createDevShimFromDocument()`, `bindForm()`) | implemented (JS validation as a UX aid; signing mocked) |
 | HFP Filler | Desktop app (Tauri + Rust) — open, verify, fill, sign, save, print | planned |
 
 ## Repository layout
@@ -67,9 +67,13 @@ filler/        desktop Filler app (added later)
     (see [spec/spike-b-findings.md](spec/spike-b-findings.md))
 - **Phase 1.1 — `hfp-core`** ✅ — `canonicalize`, `verify`, `extract`, `validate`
   (JSON Schema subset) and `sign` (reference signer; sign→verify proven by the verify corpus)
-- **Phase 1.2 — CLI** ← current — `canonicalize`/`extract`/`validate`/`verify`/`sign`/`data-payload`
+- **Phase 1.2 — CLI** ✅ (core commands) — `canonicalize`/`extract`/`validate`/`verify`/`sign`/`data-payload`
   wired; `audit` JS scan and richer `info` still to come
-- then **1.3 dev-tools + types + templates**, **1.4 Filler PoC**, **1.5 pilot**
+- **Phase 1.3 — dev-tools + types + templates** ← current — `@openhfp/types` contract, the
+  `@openhfp/devtools` browser dev shim (`createDevShimFromDocument`, `bindForm`) and the
+  `plain-html` starter template; the dev shim's JS validation will later defer to the
+  `hfp-core` WASM build (the remaining 1.3 integration)
+- then **1.4 Filler PoC**, **1.5 pilot**
 
 ## Contributing
 

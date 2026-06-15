@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="hfp-version" content="1.0">
+  <meta name="hfp-id" content="00000000-0000-4000-8000-000000000000">
+  <meta name="hfp-author" content="CN=Example Author">
+  <title>Service Protocol (starter)</title>
+
+  <!-- Machine-readable HFP blocks. Author fills #hfp-data / signatures at sign time. -->
+  <script id="hfp-schema" type="application/json">
+  {
+    "type": "object",
+    "required": ["technician", "device"],
+    "properties": {
+      "technician": { "type": "string" },
+      "device": { "type": "string", "pattern": "^[A-Za-z0-9 -]+$" }
+    }
+  }
+  </script>
+  <script id="hfp-data" type="application/json">{}</script>
+  <script id="hfp-author-signature" type="application/pkcs7-signature"></script>
+  <script id="hfp-data-signature" type="application/pkcs7-signature"></script>
+
+  <!--
+    Run in a plain browser: serve the repo root (e.g. `npx serve .`), build the packages
+    (`npm run build`), and open this file. The import map points the bare specifiers at the
+    built dev shim; inside the Filler, `window.hfp` is already present so the shim is unused.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@openhfp/types": "/packages/types/dist/index.js",
+      "@openhfp/devtools": "/packages/devtools/dist/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <h1>Service Protocol</h1>
+  <form id="form">
+    <p><label>Technician <input name="technician"></label></p>
+    <p><label>Device <input name="device"></label></p>
+  </form>
+  <p id="status">loading…</p>
+
+  <script type="module">
+    import { createDevShimFromDocument, bindForm } from "@openhfp/devtools";
+
+    // Same line works in the Filler (uses the injected host) and in a plain browser (shim).
+    const hfp = window.hfp ?? createDevShimFromDocument();
+
+    document.addEventListener("hfp:ready", (e) => {
+      const form = document.getElementById("form");
+      // Pre-fill any existing data, then bind inputs -> setData on every change.
+      for (const [name, value] of Object.entries(e.detail.data)) {
+        const input = form.elements.namedItem(name);
+        if (input) input.value = value;
+      }
+      bindForm(form, hfp);
+    });
+
+    document.addEventListener("hfp:status", () => {
+      const { errors } = hfp.validate();
+      document.getElementById("status").textContent =
+        errors.length === 0 ? "✓ data valid" : `${errors.length} validation issue(s)`;
+    });
+  </script>
+</body>
+</html>

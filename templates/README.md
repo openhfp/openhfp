@@ -1,12 +1,15 @@
 # HFP Starter Templates
 
-> **Draft / pre-alpha — to be added in Phase 1.3.**
+> **Pre-alpha.** `plain-html/` is available; framework templates are planned.
 
-Minimal, copyable starting points for form authors. Planned:
+Minimal, copyable starting points for form authors.
 
-- `plain-html/` — no framework; binds inputs by `name` via `bindForm()`.
-- `react/` — React owns state and calls `setData(state)` on change.
-- `vue/` — Vue owns state and calls `setData(state)` on change.
+- `plain-html/form.hfp` ✅ — no framework; binds inputs by `name` via `bindForm()`. The same
+  code runs in a plain browser (via `@openhfp/devtools`) and unchanged inside the Filler:
+  `const hfp = window.hfp ?? createDevShimFromDocument()`. To run locally: `npm run build`,
+  then serve the repo root (e.g. `npx serve .`) and open the file.
+- `react/` — React owns state and calls `setData(state)` on change. _(planned)_
+- `vue/` — Vue owns state and calls `setData(state)` on change. _(planned)_
 
 Each template runs in a plain browser via `@openhfp/devtools` and unchanged inside the
 Filler. UX patterns (i18n, comboboxes, autocomplete, dirty tracking, XLSX import) are the
