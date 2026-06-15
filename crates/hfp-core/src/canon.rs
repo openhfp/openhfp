@@ -50,23 +50,30 @@ const RAW_OR_PRESERVE: &[&str] = &["pre", "textarea", "script", "style"];
 /// Elements whose text children must not be HTML-escaped on output.
 const RAW_TEXT: &[&str] = &["script", "style"];
 
-/// The block ids that get their inner content emptied before hashing.
+/// The block ids emptied for the canonical *data* form (Spike A): data + its signature.
 const EMPTIED_BLOCKS: &[&str] = &["hfp-data", "hfp-data-signature"];
+
+/// The block ids emptied for the canonical *document* the author signs (Spike B): the
+/// data, the data signature, AND the author signature itself — otherwise the author
+/// signature would have to cover its own bytes (a cycle). See spike-b-findings.md.
+const AUTHOR_EMPTIED_BLOCKS: &[&str] = &["hfp-data", "hfp-data-signature", "hfp-author-signature"];
 
 /// Produce the canonical bytes for `raw`. See the module docs for the exact rules.
 pub fn canonicalize(raw: &[u8]) -> Result<Vec<u8>> {
-    let text = std::str::from_utf8(raw).map_err(|_| Error::InvalidUtf8)?;
+    canonicalize_emptying(raw, EMPTIED_BLOCKS)
+}
 
-    // Step 1: strip a leading BOM, normalize line endings to LF.
-    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
-    let normalized = normalize_line_endings(text);
+/// Canonical bytes the author signature is computed over: like [`canonicalize`] but also
+/// empties `#hfp-author-signature` so the signature does not cover itself.
+pub fn canonical_author_bytes(raw: &[u8]) -> Result<Vec<u8>> {
+    canonicalize_emptying(raw, AUTHOR_EMPTIED_BLOCKS)
+}
 
-    // Step 2: parse with the HTML5 algorithm.
-    use html5ever::tendril::TendrilSink;
-    let dom = html5ever::parse_document(RcDom::default(), Default::default()).one(normalized);
+fn canonicalize_emptying(raw: &[u8], empty_ids: &[&str]) -> Result<Vec<u8>> {
+    let dom = parse(raw)?;
 
-    // Step 3: locate required blocks, fail on duplicate/missing, then empty them.
-    for id in EMPTIED_BLOCKS {
+    // Locate required blocks, fail on duplicate/missing, then empty them.
+    for id in empty_ids {
         let nodes = find_by_id(&dom.document, id);
         match nodes.len() {
             0 => return Err(Error::MissingBlock(static_id(id))),
@@ -75,12 +82,76 @@ pub fn canonicalize(raw: &[u8]) -> Result<Vec<u8>> {
         }
     }
 
-    // Step 4: deterministic serialization.
     let mut out = String::new();
     for child in dom.document.children.borrow().iter() {
         serialize_node(child, &mut out);
     }
     Ok(out.into_bytes())
+}
+
+/// Parse `raw` into a DOM after BOM strip + line-ending normalization.
+fn parse(raw: &[u8]) -> Result<RcDom> {
+    use html5ever::tendril::TendrilSink;
+    let text = std::str::from_utf8(raw).map_err(|_| Error::InvalidUtf8)?;
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+    let normalized = normalize_line_endings(text);
+    Ok(html5ever::parse_document(RcDom::default(), Default::default()).one(normalized))
+}
+
+/// Concatenated text content of the single element with `id`, LF-normalized and trimmed.
+/// Missing element -> `MissingBlock`; duplicate id -> `DuplicateBlock`.
+pub(crate) fn inner_text_by_id(raw: &[u8], id: &'static str) -> Result<String> {
+    let dom = parse(raw)?;
+    let nodes = find_by_id(&dom.document, id);
+    match nodes.len() {
+        0 => Err(Error::MissingBlock(id)),
+        1 => {
+            let mut text = String::new();
+            collect_text(&nodes[0], &mut text);
+            Ok(text.trim().to_string())
+        }
+        _ => Err(Error::DuplicateBlock(id)),
+    }
+}
+
+/// The `content` attribute of `<meta name="...">`, if present.
+pub(crate) fn meta_content(raw: &[u8], name: &str) -> Result<Option<String>> {
+    let dom = parse(raw)?;
+    Ok(find_meta(&dom.document, name))
+}
+
+fn collect_text(node: &Handle, out: &mut String) {
+    if let NodeData::Text { contents } = &node.data {
+        out.push_str(&contents.borrow());
+    }
+    for child in node.children.borrow().iter() {
+        collect_text(child, out);
+    }
+}
+
+fn find_meta(node: &Handle, name: &str) -> Option<String> {
+    if let NodeData::Element {
+        name: tag, attrs, ..
+    } = &node.data
+    {
+        if &*tag.local == "meta" {
+            let attrs = attrs.borrow();
+            let is_named = attrs
+                .iter()
+                .any(|a| &*a.name.local == "name" && &*a.value == name);
+            if is_named {
+                if let Some(content) = attrs.iter().find(|a| &*a.name.local == "content") {
+                    return Some(content.value.to_string());
+                }
+            }
+        }
+    }
+    for child in node.children.borrow().iter() {
+        if let Some(found) = find_meta(child, name) {
+            return Some(found);
+        }
+    }
+    None
 }
 
 /// SHA-256 of the canonical bytes, lowercase hex — the signed digest.
@@ -99,6 +170,7 @@ fn static_id(id: &str) -> &'static str {
     match id {
         "hfp-data" => "hfp-data",
         "hfp-data-signature" => "hfp-data-signature",
+        "hfp-author-signature" => "hfp-author-signature",
         _ => "hfp-block",
     }
 }

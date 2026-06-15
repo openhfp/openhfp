@@ -30,10 +30,12 @@ canonicalize(raw_bytes):
 The exact serialization rules and their rationale live in
 [spike-a-findings.md](spike-a-findings.md) and `crates/hfp-core/src/canon.rs`.
 
-- The author signature covers the canonical document with both `#hfp-data` and
-  `#hfp-data-signature` emptied.
+- The author signature covers the canonical document with `#hfp-data`,
+  `#hfp-data-signature` **and `#hfp-author-signature`** emptied — the third block was added
+  by Spike B, otherwise the author signature would cover its own bytes (a cycle). This is
+  [`canonical_author_bytes`] in `hfp-core`.
 - The data signature covers the canonical data plus the `hfp-id` and a hash of the author
-  signature.
+  signature. The exact payload is defined in [spike-b-findings.md](spike-b-findings.md).
 
 ## Determinism requirements
 

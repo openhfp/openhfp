@@ -1,6 +1,9 @@
 # HFP Threat Model
 
-> **Draft / pre-alpha.**
+> **Draft / pre-alpha.** The signing/verification mechanics referenced here are validated by
+> Spike B — pure-Rust CMS/PKCS#7 verify, CA whitelist and CRL revocation. See
+> [spike-b-findings.md](spike-b-findings.md) for what is proven and what is still open
+> (full path validation, OCSP, algorithm agility).
 
 This document states plainly what HFP protects against and what it does not. It exists
 because HFP deliberately chooses **attribution over security** (principle 1): the format

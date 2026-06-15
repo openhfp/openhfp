@@ -47,3 +47,18 @@ jobs:
       - run: cargo build -p hfp-cli --release
       - run: cargo build -p hfp-cli --release --target wasm32-wasip1
       - run: node conformance/run.mjs
+
+  verify:
+    name: Verify corpus (CMS, CA whitelist, revocation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cargo build -p hfp-cli --release
+      - run: bash conformance/verify/gen-pki.sh
+      - run: node conformance/verify/build-cases.mjs
+      - run: node conformance/verify/run-verify.mjs
