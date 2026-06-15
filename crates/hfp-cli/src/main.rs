@@ -1,8 +1,8 @@
 //! `hfp` — command-line interface for the HFP (HTML Form Package) format.
 //!
-//! A thin shell over [`hfp_core`]. Status: pre-alpha scaffold — the commands are
-//! declared and wired to the core engine, but the engine itself is not implemented
-//! yet (see the repository roadmap).
+//! A thin shell over [`hfp_core`]. `canonicalize`, `extract`, `validate`, `verify`,
+//! `sign` and `data-payload` are wired to the engine; `audit` and a richer `info` are
+//! still to come (see the repository roadmap).
 
 use std::process::ExitCode;
 
@@ -22,7 +22,10 @@ const COMMANDS: &[(&str, &str)] = &[
         "data-payload",
         "print the bytes the data signature is computed over",
     ),
-    ("sign", "sign a form or its data"),
+    (
+        "sign",
+        "sign a form (--author-cert/-key, --filler-cert/-key PEM)",
+    ),
     ("audit", "static heuristic scan of the form's JavaScript"),
     ("info", "print metadata, author and signature status"),
 ];
@@ -112,6 +115,56 @@ fn run_verify(args: &[String]) -> ExitCode {
         }
         Err(e) => {
             eprintln!("verify: {e}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// `sign <file> --author-cert P --author-key P --filler-cert P --filler-key P`.
+/// Produce a fully signed `.hfp` on stdout (author + data signatures).
+fn run_sign(args: &[String]) -> ExitCode {
+    let Some(path) = args.iter().find(|a| !a.starts_with("--")) else {
+        eprintln!("sign: missing file argument");
+        return ExitCode::from(2);
+    };
+    let read_flag = |flag: &str| -> Option<Vec<u8>> {
+        let v = flag_values(args, flag);
+        v.first().and_then(|p| std::fs::read(p).ok())
+    };
+    let (Some(ac), Some(ak), Some(fc), Some(fk)) = (
+        read_flag("--author-cert"),
+        read_flag("--author-key"),
+        read_flag("--filler-cert"),
+        read_flag("--filler-key"),
+    ) else {
+        eprintln!(
+            "sign: need --author-cert/--author-key/--filler-cert/--filler-key (readable PEM files)"
+        );
+        return ExitCode::from(2);
+    };
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("cannot read {path}: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let author = hfp_core::SigningIdentity {
+        cert_pem: ac,
+        key_pem: ak,
+    };
+    let filler = hfp_core::SigningIdentity {
+        cert_pem: fc,
+        key_pem: fk,
+    };
+    match hfp_core::sign(&bytes, &author, &filler) {
+        Ok(signed) => {
+            use std::io::Write;
+            std::io::stdout().write_all(&signed).ok();
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("sign: {e}");
             ExitCode::from(2)
         }
     }
@@ -256,6 +309,7 @@ fn main() -> ExitCode {
         Some("data-payload") => run_data_payload(&args.collect::<Vec<_>>()),
         Some("extract") => run_extract(&args.collect::<Vec<_>>()),
         Some("validate") => run_validate(&args.collect::<Vec<_>>()),
+        Some("sign") => run_sign(&args.collect::<Vec<_>>()),
         Some(cmd) if COMMANDS.iter().any(|(name, _)| *name == cmd) => {
             eprintln!("`{cmd}` is not implemented yet (pre-alpha scaffold).");
             ExitCode::from(2)

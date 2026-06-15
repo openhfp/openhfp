@@ -38,8 +38,8 @@ The author signs the canonical document; the filler signs the canonical data plu
 
 | Component | What it is | Status |
 |-----------|-----------|--------|
-| `hfp-core` | Rust crate — parse, canonicalize, extract, validate, verify (+ WASM target) | canonicalize, verify, extract, validate done; sign/audit pending |
-| `hfp-cli` | Rust binary — `validate` / `extract` / `verify` / `canonicalize` / `sign` / `audit` | `canonicalize`, `extract`, `validate`, `verify`, `data-payload` work |
+| `hfp-core` | Rust crate — parse, canonicalize, extract, validate, verify, sign (+ WASM target) | canonicalize, verify, extract, validate, sign done; `audit` pending |
+| `hfp-cli` | Rust binary — `validate` / `extract` / `verify` / `canonicalize` / `sign` / `audit` | `canonicalize`, `extract`, `validate`, `verify`, `sign`, `data-payload` work |
 | `@openhfp/types` | TypeScript contract for the `window.hfp` runtime API | scaffold |
 | `@openhfp/devtools` | Browser dev shim (`createDevShimFromDocument()`) | scaffold |
 | HFP Filler | Desktop app (Tauri + Rust) — open, verify, fill, sign, save, print | planned |
@@ -65,10 +65,11 @@ filler/        desktop Filler app (added later)
   - Spike B: end-to-end CMS/PKCS#7 sign + verify against a CA trust whitelist, incl. revocation ✅ —
     pure-Rust verify (also WASM), CRL revocation, proven by the verify corpus
     (see [spec/spike-b-findings.md](spec/spike-b-findings.md))
-- **Phase 1.1 — `hfp-core`** ← current — `canonicalize`, `verify`, `extract` and `validate`
-  (JSON Schema subset) implemented; `sign` and the `audit` JS scan still to come
-- then **1.2 CLI** / **1.3 dev-tools + types + templates** (parallel),
-  then **1.4 Filler PoC**, then **1.5 pilot**
+- **Phase 1.1 — `hfp-core`** ✅ — `canonicalize`, `verify`, `extract`, `validate`
+  (JSON Schema subset) and `sign` (reference signer; sign→verify proven by the verify corpus)
+- **Phase 1.2 — CLI** ← current — `canonicalize`/`extract`/`validate`/`verify`/`sign`/`data-payload`
+  wired; `audit` JS scan and richer `info` still to come
+- then **1.3 dev-tools + types + templates**, **1.4 Filler PoC**, **1.5 pilot**
 
 ## Contributing
 

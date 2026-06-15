@@ -47,9 +47,12 @@ keys). The scripts under `verify/` build a test CA + certs + CRL with OpenSSL, s
 ```sh
 cargo build -p hfp-cli --release
 bash verify/gen-pki.sh         # test CA, author/filler/revoked certs, CRL
-node verify/build-cases.mjs    # sign valid / untrusted-ca / tampered / revoked cases
+node verify/build-cases.mjs    # build cases (most via OpenSSL; `self-signed` via `hfp sign`)
 node verify/run-verify.mjs     # assert author/data signature validity + is_trusted
 ```
+
+Cases: `valid`, `untrusted-ca`, `tampered`, `revoked`, `revoked-no-check`, and
+`self-signed` (signed by our own `hfp sign`, proving the sign→verify loop in our code).
 
 See [../spec/spike-b-findings.md](../spec/spike-b-findings.md). OCSP and full path
 validation (validity dates, key usage, intermediates) are follow-ups.
