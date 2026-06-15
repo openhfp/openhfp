@@ -38,8 +38,8 @@ The author signs the canonical document; the filler signs the canonical data plu
 
 | Component | What it is | Status |
 |-----------|-----------|--------|
-| `hfp-core` | Rust crate — parse, canonicalize, extract, validate, verify (+ WASM target) | canonicalize + verify done; extract/validate scaffold |
-| `hfp-cli` | Rust binary — `validate` / `extract` / `verify` / `canonicalize` / `sign` / `audit` | `canonicalize`, `data-payload`, `verify` work |
+| `hfp-core` | Rust crate — parse, canonicalize, extract, validate, verify (+ WASM target) | canonicalize, verify, extract, validate done; sign/audit pending |
+| `hfp-cli` | Rust binary — `validate` / `extract` / `verify` / `canonicalize` / `sign` / `audit` | `canonicalize`, `extract`, `validate`, `verify`, `data-payload` work |
 | `@openhfp/types` | TypeScript contract for the `window.hfp` runtime API | scaffold |
 | `@openhfp/devtools` | Browser dev shim (`createDevShimFromDocument()`) | scaffold |
 | HFP Filler | Desktop app (Tauri + Rust) — open, verify, fill, sign, save, print | planned |
@@ -59,13 +59,15 @@ filler/        desktop Filler app (added later)
 ## Roadmap
 
 - **Phase 0 — Specification** ✅ design complete (validated through structured review)
-- **Phase 1.0 — De-risk spikes** ← current
+- **Phase 1.0 — De-risk spikes** ✅
   - Spike A: canonicalization determinism ✅ — stable hash across real-world mutations and
     WASM == native, both proven by the conformance corpus (see [spec/spike-a-findings.md](spec/spike-a-findings.md))
   - Spike B: end-to-end CMS/PKCS#7 sign + verify against a CA trust whitelist, incl. revocation ✅ —
     pure-Rust verify (also WASM), CRL revocation, proven by the verify corpus
     (see [spec/spike-b-findings.md](spec/spike-b-findings.md))
-- **Phase 1.1 — `hfp-core`**, then **1.2 CLI** / **1.3 dev-tools + types + templates** (parallel),
+- **Phase 1.1 — `hfp-core`** ← current — `canonicalize`, `verify`, `extract` and `validate`
+  (JSON Schema subset) implemented; `sign` and the `audit` JS scan still to come
+- then **1.2 CLI** / **1.3 dev-tools + types + templates** (parallel),
   then **1.4 Filler PoC**, then **1.5 pilot**
 
 ## Contributing
