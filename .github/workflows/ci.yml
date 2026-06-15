@@ -31,3 +31,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+
+  conformance:
+    name: Conformance (canonicalization, native == wasm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cargo build -p hfp-cli --release
+      - run: cargo build -p hfp-cli --release --target wasm32-wasip1
+      - run: node conformance/run.mjs
