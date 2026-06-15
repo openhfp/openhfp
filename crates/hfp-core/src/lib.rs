@@ -13,6 +13,9 @@
 
 use std::fmt;
 
+mod canon;
+pub use canon::canonical_sha256_hex;
+
 /// Errors returned by the core engine.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
@@ -75,8 +78,8 @@ pub struct VerifyReport {
 /// The canonical form empties the inner content of the `#hfp-data` and
 /// `#hfp-data-signature` blocks (keeping their tags), normalizes line endings to LF
 /// and requires valid UTF-8. It hard-fails on duplicate or missing required blocks.
-pub fn canonicalize(_raw: &[u8]) -> Result<Vec<u8>> {
-    Err(Error::NotImplemented("canonicalize"))
+pub fn canonicalize(raw: &[u8]) -> Result<Vec<u8>> {
+    canon::canonicalize(raw)
 }
 
 /// Extract the embedded `#hfp-data` JSON as a string.
@@ -120,13 +123,17 @@ mod tests {
 
     #[test]
     fn scaffold_operations_report_not_implemented() {
-        assert_eq!(
-            canonicalize(b""),
-            Err(Error::NotImplemented("canonicalize"))
-        );
+        // `canonicalize` is implemented as of Spike A; the rest are still scaffold.
         assert_eq!(
             verify(b"", &TrustConfig::default()).unwrap_err(),
             Error::NotImplemented("verify")
         );
+        assert_eq!(extract(b"").unwrap_err(), Error::NotImplemented("extract"));
+    }
+
+    #[test]
+    fn canonicalize_is_wired_up() {
+        // Empty input has no required blocks, so it hard-fails (not NotImplemented).
+        assert_eq!(canonicalize(b""), Err(Error::MissingBlock("hfp-data")));
     }
 }

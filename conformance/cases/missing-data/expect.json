@@ -1,0 +1,4 @@
+{
+  "canonicalize": "fail",
+  "reason": "required block is missing: hfp-data"
+}

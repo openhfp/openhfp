@@ -60,7 +60,8 @@ filler/        desktop Filler app (added later)
 
 - **Phase 0 — Specification** ✅ design complete (validated through structured review)
 - **Phase 1.0 — De-risk spikes** ← current
-  - Spike A: canonicalization determinism (stable hash across real-world mutations; WASM == native)
+  - Spike A: canonicalization determinism ✅ — stable hash across real-world mutations and
+    WASM == native, both proven by the conformance corpus (see [spec/spike-a-findings.md](spec/spike-a-findings.md))
   - Spike B: end-to-end CMS/PKCS#7 sign + verify against a CA trust whitelist, incl. revocation
 - **Phase 1.1 — `hfp-core`**, then **1.2 CLI** / **1.3 dev-tools + types + templates** (parallel),
   then **1.4 Filler PoC**, then **1.5 pilot**

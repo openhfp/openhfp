@@ -1,27 +1,34 @@
 # HFP Canonicalization
 
-> **Draft / pre-alpha.** The exact algorithm is being pinned down in Spike A; this is the
-> intended shape. The conformance corpus (`conformance/`) is the binding contract.
+> **Pinned by Spike A (v1).** The algorithm below is implemented in `crates/hfp-core`
+> (`canon.rs`) and exercised by the conformance corpus (the binding contract). See
+> [spike-a-findings.md](spike-a-findings.md) for the decisions, results and open questions
+> (notably the inline-whitespace caveat). Parser chosen: **html5ever + a custom
+> deterministic serializer**.
 
 Signatures are computed over a **canonical byte representation** of the document, derived
 deterministically so that benign reformatting (a formatter, a minifier, reordered
 attributes, line-ending changes) does not invalidate a signature.
 
-## Algorithm (intended)
+## Algorithm
 
 ```
 canonicalize(raw_bytes):
   1. UTF-8 decode (hard fail if invalid)
-  2. Normalize line endings CRLF/CR -> LF; strip a leading BOM
-  3. Parse with a real HTML parser (lol-html or html5ever — decided in Spike A),
-     not a regex
+  2. Strip a leading BOM; normalize line endings CRLF/CR -> LF
+  3. Parse with the HTML5 algorithm (html5ever — chosen in Spike A), not a regex
   4. Locate the elements with id="hfp-data" and id="hfp-data-signature"
        - duplicate id            -> HARD FAIL
        - missing required element -> HARD FAIL
   5. Empty only their inner content (keep the tags)
-  6. Serialize back to UTF-8 bytes
+  6. Serialize through the canonical serializer (sorted attributes, double-quoted;
+     void elements unclosed; raw-text verbatim; comments dropped; whitespace-only
+     inter-element text dropped) back to UTF-8 bytes
   -> SHA-256 of those bytes is the signed digest
 ```
+
+The exact serialization rules and their rationale live in
+[spike-a-findings.md](spike-a-findings.md) and `crates/hfp-core/src/canon.rs`.
 
 - The author signature covers the canonical document with both `#hfp-data` and
   `#hfp-data-signature` emptied.
