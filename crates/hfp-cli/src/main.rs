@@ -117,6 +117,62 @@ fn run_verify(args: &[String]) -> ExitCode {
     }
 }
 
+/// Print the embedded `#hfp-data` JSON.
+fn run_extract(args: &[String]) -> ExitCode {
+    let Some(path) = args.iter().find(|a| !a.starts_with("--")) else {
+        eprintln!("extract: missing file argument");
+        return ExitCode::from(2);
+    };
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("cannot read {path}: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    match hfp_core::extract(&bytes) {
+        Ok(data) => {
+            println!("{data}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("extract: {e}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// Validate `#hfp-data` against `#hfp-schema`; print problems, exit 1 if invalid.
+fn run_validate(args: &[String]) -> ExitCode {
+    let Some(path) = args.iter().find(|a| !a.starts_with("--")) else {
+        eprintln!("validate: missing file argument");
+        return ExitCode::from(2);
+    };
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("cannot read {path}: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    match hfp_core::validate(&bytes) {
+        Ok(report) if report.valid => {
+            println!("valid");
+            ExitCode::SUCCESS
+        }
+        Ok(report) => {
+            for e in &report.errors {
+                println!("{}: {}", e.path, e.message);
+            }
+            ExitCode::from(1)
+        }
+        Err(e) => {
+            eprintln!("validate: {e}");
+            ExitCode::from(2)
+        }
+    }
+}
+
 /// Print the exact bytes the data signature is computed over (for fixture signing).
 fn run_data_payload(args: &[String]) -> ExitCode {
     let Some(path) = args.iter().find(|a| !a.starts_with("--")) else {
@@ -198,6 +254,8 @@ fn main() -> ExitCode {
         Some("verify") => run_verify(&args.collect::<Vec<_>>()),
         Some("canonicalize") => run_canonicalize(&args.collect::<Vec<_>>()),
         Some("data-payload") => run_data_payload(&args.collect::<Vec<_>>()),
+        Some("extract") => run_extract(&args.collect::<Vec<_>>()),
+        Some("validate") => run_validate(&args.collect::<Vec<_>>()),
         Some(cmd) if COMMANDS.iter().any(|(name, _)| *name == cmd) => {
             eprintln!("`{cmd}` is not implemented yet (pre-alpha scaffold).");
             ExitCode::from(2)

@@ -14,6 +14,7 @@
 use std::fmt;
 
 mod canon;
+mod schema;
 mod verify;
 pub use canon::canonical_sha256_hex;
 
@@ -28,6 +29,8 @@ pub enum Error {
     DuplicateBlock(&'static str),
     /// A required `<meta>` element (for example `hfp-id`) was missing.
     MissingMeta(&'static str),
+    /// A block that must contain JSON (for example `#hfp-data`) did not parse.
+    InvalidJson(&'static str),
     /// The operation is part of the API surface but is not implemented yet.
     NotImplemented(&'static str),
 }
@@ -39,6 +42,7 @@ impl fmt::Display for Error {
             Error::MissingBlock(b) => write!(f, "required block is missing: {b}"),
             Error::DuplicateBlock(b) => write!(f, "duplicate block id: {b}"),
             Error::MissingMeta(m) => write!(f, "required meta is missing: {m}"),
+            Error::InvalidJson(b) => write!(f, "block is not valid JSON: {b}"),
             Error::NotImplemented(what) => write!(f, "not implemented yet: {what}"),
         }
     }
@@ -72,6 +76,24 @@ pub struct TrustConfig {
     pub no_revocation_check: bool,
 }
 
+/// A single schema validation problem, addressed by JSON path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidationError {
+    /// JSON path to the offending value, e.g. `faults[0]` or `device`.
+    pub path: String,
+    /// Human-readable message (a UX hint, not a security boundary).
+    pub message: String,
+}
+
+/// Result of validating `#hfp-data` against `#hfp-schema`.
+#[derive(Debug, Clone, Default)]
+pub struct ValidationReport {
+    /// True when there are no validation errors.
+    pub valid: bool,
+    /// Every problem found (empty when `valid`).
+    pub errors: Vec<ValidationError>,
+}
+
 /// Outcome of verifying a `.hfp` document.
 #[derive(Debug, Clone, Default)]
 pub struct VerifyReport {
@@ -94,14 +116,17 @@ pub fn canonicalize(raw: &[u8]) -> Result<Vec<u8>> {
     canon::canonicalize(raw)
 }
 
-/// Extract the embedded `#hfp-data` JSON as a string.
-pub fn extract(_raw: &[u8]) -> Result<String> {
-    Err(Error::NotImplemented("extract"))
+/// Extract the embedded `#hfp-data` JSON as a string (the inner content, trimmed).
+/// Errors if the block is missing or does not contain valid JSON.
+pub fn extract(raw: &[u8]) -> Result<String> {
+    schema::extract(raw)
 }
 
-/// Validate the embedded data against the `#hfp-schema` (a JSON Schema subset).
-pub fn validate(_raw: &[u8]) -> Result<()> {
-    Err(Error::NotImplemented("validate"))
+/// Validate the embedded `#hfp-data` against the `#hfp-schema` (a JSON Schema subset:
+/// `type`, `required`, `properties`, `items`, `enum`, `pattern`). Structural problems
+/// (missing block, invalid JSON) are `Err`; schema violations populate the report.
+pub fn validate(raw: &[u8]) -> Result<ValidationReport> {
+    schema::validate(raw)
 }
 
 /// The bytes the data signature is computed over: the canonical data bound to the
@@ -155,20 +180,12 @@ mod tests {
     }
 
     #[test]
-    fn scaffold_operations_report_not_implemented() {
-        // `canonicalize` (Spike A) and `verify` (Spike B) are implemented; the data
-        // extraction / schema validation engines are still scaffold.
-        assert_eq!(extract(b"").unwrap_err(), Error::NotImplemented("extract"));
-        assert_eq!(
-            validate(b"").unwrap_err(),
-            Error::NotImplemented("validate")
-        );
-    }
-
-    #[test]
     fn implemented_operations_are_wired_up() {
-        // Empty input has no required blocks, so these hard-fail (not NotImplemented).
+        // canonicalize (A), verify (B), extract + validate (1.1) all parse the document;
+        // empty input has no required blocks, so each hard-fails structurally.
         assert_eq!(canonicalize(b""), Err(Error::MissingBlock("hfp-data")));
+        assert_eq!(extract(b"").unwrap_err(), Error::MissingBlock("hfp-data"));
+        assert_eq!(validate(b"").unwrap_err(), Error::MissingBlock("hfp-data"));
         assert_eq!(
             verify(b"", &TrustConfig::default()).unwrap_err(),
             Error::MissingBlock("hfp-data")
