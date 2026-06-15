@@ -12,22 +12,40 @@ rust-version.workspace = true
 # `cdylib` is kept so the crate can also be compiled to a WASM module (decided in Spike A).
 crate-type = ["rlib", "cdylib"]
 
+[features]
+# `crypto` (default) = signature verification + the reference signer. Turning it off leaves
+# the read side (parse/canonicalize/extract/validate) — that's what the WASM dev shim build
+# uses, so it pulls no CMS/RSA/getrandom dependencies.
+default = ["crypto"]
+crypto = [
+    "dep:cms",
+    "dep:x509-cert",
+    "dep:der",
+    "dep:const-oid",
+    "dep:spki",
+    "dep:rsa",
+    "dep:sha1",
+    "dep:signature",
+    "dep:base64",
+]
+
 [dependencies]
+# Read side — always compiled (also the WASM dev shim build).
 html5ever = "0.39.0"
 markup5ever_rcdom = "0.39.0"
-
-# CMS/PKCS#7 verification stack (Spike B) — pinned to one coherent RustCrypto generation.
-# cms 0.2 is built on der 0.7 / const-oid 0.9 / spki 0.7 / x509-cert 0.2, and rsa 0.9
-# integrates with the digest 0.10 generation, so sha2 is held at 0.10 (not 0.11).
-cms = { version = "0.2.3", features = ["builder"] }
-x509-cert = "0.2.5"
-der = { version = "0.7", features = ["oid"] }
-const-oid = { version = "0.9", features = ["db"] }
-spki = "0.7"
-rsa = { version = "0.9", features = ["sha2"] }
-sha2 = "0.10"
-sha1 = "0.10"
-signature = "2"
-base64 = "0.22"
 serde_json = "1.0.150"
 regex = "1.12.4"
+sha2 = "0.10"
+
+# CMS/PKCS#7 stack (Spike B), behind the `crypto` feature — pinned to one coherent
+# RustCrypto generation. cms 0.2 is built on der 0.7 / const-oid 0.9 / spki 0.7 /
+# x509-cert 0.2, and rsa 0.9 integrates with the digest 0.10 generation (sha2 0.10).
+cms = { version = "0.2.3", features = ["builder"], optional = true }
+x509-cert = { version = "0.2.5", optional = true }
+der = { version = "0.7", features = ["oid"], optional = true }
+const-oid = { version = "0.9", features = ["db"], optional = true }
+spki = { version = "0.7", optional = true }
+rsa = { version = "0.9", features = ["sha2"], optional = true }
+sha1 = { version = "0.10", optional = true }
+signature = { version = "2", optional = true }
+base64 = { version = "0.22", optional = true }

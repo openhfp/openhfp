@@ -63,3 +63,23 @@ jobs:
       - run: bash conformance/verify/gen-pki.sh
       - run: node conformance/verify/build-cases.mjs
       - run: node conformance/verify/run-verify.mjs
+
+  wasm:
+    name: WASM read side (core-wasm == native)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@0.2.125
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: cargo build -p hfp-cli --release
+      - run: npm run build --workspace @openhfp/core-wasm
+      - run: node --test packages/core-wasm/test/*.test.mjs

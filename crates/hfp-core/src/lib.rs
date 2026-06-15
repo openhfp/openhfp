@@ -15,9 +15,12 @@ use std::fmt;
 
 mod canon;
 mod schema;
+#[cfg(feature = "crypto")]
 mod sign;
+#[cfg(feature = "crypto")]
 mod verify;
 pub use canon::canonical_sha256_hex;
+#[cfg(feature = "crypto")]
 pub use sign::SigningIdentity;
 
 /// Errors returned by the core engine.
@@ -62,6 +65,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 ///
 /// Without a config this behaves as "dev mode" (use the OS trust store). With a
 /// config, only the whitelisted CAs are accepted (enterprise mode).
+#[cfg(feature = "crypto")]
 #[derive(Debug, Clone, Default)]
 pub struct TrustConfig {
     /// DER-encoded CA certificates that act as trust anchors (chains must terminate at
@@ -100,6 +104,7 @@ pub struct ValidationReport {
 }
 
 /// Outcome of verifying a `.hfp` document.
+#[cfg(feature = "crypto")]
 #[derive(Debug, Clone, Default)]
 pub struct VerifyReport {
     /// The author's signature over the canonical document is valid.
@@ -134,14 +139,22 @@ pub fn validate(raw: &[u8]) -> Result<ValidationReport> {
     schema::validate(raw)
 }
 
+/// Validate already-extracted `data` JSON against `schema` JSON (same subset as
+/// [`validate`]). For hosts that already hold the parsed blocks (e.g. the WASM dev shim).
+pub fn validate_values(schema_json: &str, data_json: &str) -> Result<ValidationReport> {
+    schema::validate_values(schema_json, data_json)
+}
+
 /// The bytes the data signature is computed over: the canonical data bound to the
 /// `hfp-id` and a hash of the author signature. See [`verify`] and spike-b-findings.md.
+#[cfg(feature = "crypto")]
 pub fn data_signing_payload(raw: &[u8]) -> Result<Vec<u8>> {
     verify::data_signing_payload(raw)
 }
 
 /// Canonical bytes the author signature is computed over (data, data-signature and
 /// author-signature blocks emptied).
+#[cfg(feature = "crypto")]
 pub fn canonical_author_bytes(raw: &[u8]) -> Result<Vec<u8>> {
     canon::canonical_author_bytes(raw)
 }
@@ -156,6 +169,7 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 /// Verify the author and data signatures against the given trust policy.
+#[cfg(feature = "crypto")]
 pub fn verify(raw: &[u8], trust: &TrustConfig) -> Result<VerifyReport> {
     verify::verify(raw, trust)
 }
@@ -163,6 +177,7 @@ pub fn verify(raw: &[u8], trust: &TrustConfig) -> Result<VerifyReport> {
 /// Produce a fully signed `.hfp`: the author signs the canonical document, then the filler
 /// signs the bound data payload. Signing lives here as the reference implementation; in
 /// production the Filler supplies key access (OS keystore).
+#[cfg(feature = "crypto")]
 pub fn sign(raw: &[u8], author: &SigningIdentity, filler: &SigningIdentity) -> Result<Vec<u8>> {
     sign::sign(raw, author, filler)
 }

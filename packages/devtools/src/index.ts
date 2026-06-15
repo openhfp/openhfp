@@ -15,6 +15,13 @@ import { validateData } from "./validate.js";
 export interface DevShimOptions {
   /** Document to read blocks from and dispatch events on. Defaults to `document`. */
   doc?: Document;
+  /**
+   * Validator override. Defaults to the bundled JS subset validator (a UX aid). Pass a
+   * `hfp-core` WASM-backed validator (e.g. wrapping `@openhfp/core-wasm`'s `validateData`)
+   * to share the exact Rust implementation in the browser:
+   * `validate: (schema, data) => JSON.parse(validateData(JSON.stringify(schema), JSON.stringify(data)))`.
+   */
+  validate?: (schema: object, data: object) => ValidationResult;
 }
 
 /** Dev status: nothing is signed in dev mode. */
@@ -43,6 +50,7 @@ export function createDevShimFromDocument(options: DevShimOptions = {}): HfpApi 
   const doc = options.doc ?? document;
   const schema = blockJson(doc, "hfp-schema");
   let data = blockJson(doc, "hfp-data");
+  const runValidate = options.validate ?? validateData;
 
   const dispatch = (name: string, detail: unknown): void => {
     doc.dispatchEvent(new CustomEvent(name, { detail }));
@@ -52,7 +60,7 @@ export function createDevShimFromDocument(options: DevShimOptions = {}): HfpApi 
     getData: () => structuredClone(data),
     setData: (next: object): Promise<ValidationResult> => {
       data = structuredClone(next);
-      const result = validateData(schema, data);
+      const result = runValidate(schema, data);
       dispatch("hfp:status", DEV_STATUS);
       return Promise.resolve(result);
     },
@@ -60,7 +68,7 @@ export function createDevShimFromDocument(options: DevShimOptions = {}): HfpApi 
       setByPath(data, path, value);
     },
     getSchema: () => structuredClone(schema),
-    validate: (): ValidationResult => validateData(schema, data),
+    validate: (): ValidationResult => runValidate(schema, data),
     save: (): void => {
       console.info("[hfp dev shim] save() is a no-op in dev mode");
     },
